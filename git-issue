@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# enable debug mode
+if [ "$DEBUG" = "yes" ]; then
+	set -x
+fi
+
+set +e
+
+usage() {
+	echo "usage: git issue <start|finish> <issue>"
+}
+
+fail() {
+	echo $@
+	usage
+	exit 1
+}
+
+cmd_start() {
+	SUMMARY=`$JIRA_CMD -a getFieldValue --field Summary --issue $1 2>/dev/null | sed -e '1d' | tr ' ' '_'`
+	test -n "$SUMMARY" || fail "Issue $1 Does Not Exist."
+	
+	BRANCH="$1/$SUMMARY"
+	echo "creating branch $BRANCH"
+	git checkout -b $BRANCH development
+	
+	echo "updating issue $1"
+	$JIRA_CMD -a progressIssue --issue $1 --step "In Progress"
+	$JIRA_CMD -a updateIssue --issue $1 --assignee $JIRA_USER
+	
+}
+
+cmd_finish() {
+	echo "Finish $1"
+}
+
+main() {
+	if [ "$#" -lt 1 ]; then
+		fail "Missing Subcommand."
+	fi
+	JIRA_SERVER=$(git config jira.server || true)
+	JIRA_USER=$(git config jira.user || true)
+	JIRA_PASSWORD=$(git config jira.password || true)
+	JIRA_CLI=$(git config jira.cli || true)
+	
+	test -n $JIRA_SERVER || fail "Missing JIRA Server Config."
+	test -n $JIRA_USER || fail "Missing JIRA User Config."
+	test -n $JIRA_PASSWORD || fail "Missing JIRA Password Config."
+	test -n $JIRA_CLI || fail "Missing JIRA CLI Config."
+	
+	JIRA_CMD="$JIRA_CLI --server $JIRA_SERVER --user $JIRA_USER --password $JIRA_PASSWORD"
+	
+	SUBACTION="$1"
+	
+	if ! type "cmd_$SUBACTION" >/dev/null 2>&1; then
+		fail "Unknown Subcommand: $SUBACTION"
+	fi
+	
+	cmd_$SUBACTION "$2"
+}
+
+main "$@"
