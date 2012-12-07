@@ -38,7 +38,7 @@ cmd_start() {
 	
 	echo "updating issue $1"
 	$JIRA_CMD -a progressIssue --issue $1 --step "In Progress"
-	$JIRA_CMD -a updateIssue --issue $1 --assignee $JIRA_USER
+	$JIRA_CMD -a updateIssue --issue $1 --assignee $JIRA_USER >/dev/null 2>&1
 }
 
 cmd_finish() {
@@ -48,14 +48,19 @@ cmd_finish() {
 		local BRANCH=$(git_current_branch)
 	fi
 	
+	local ISSUEKEY=${BRANCH%/*}
+	
 	test -n "$BRANCH" || fail "Issue $1 is not currently being worked on."
 	echo "Finishing $BRANCH"
 	
 	git checkout development
 	git pull origin development 2>/dev/null
-	git merge --no-ff $BRANCH -m "Closing ${BRANCH%/*} #resolve"
+	git merge --no-ff $BRANCH -m "Closing $ISSUEKEY #resolve"
 	git branch -d $BRANCH
 	git push origin development 2>/dev/null
+	
+	echo "updating issue $ISSUEKEY"
+	$JIRA_CMD -a progressIssue --issue $ISSUEKEY --step "Resolved"
 }
 
 main() {
