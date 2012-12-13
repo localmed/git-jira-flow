@@ -8,7 +8,8 @@ Git extension that uses the jira-cli to match git and jira workflows
 Add `git-issue` to a folder somewhere in your path.
 
 ## Usage
-	
-	$ git issue start <issue key>
-	
-	$ git issue finish [issue key]
+
+``` bash
+$ git issue start <JIRA-ID> [-b <DESCRIPTION>]
+$ git issue finish [JIRA-ID]
+```
