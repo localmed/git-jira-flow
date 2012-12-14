@@ -62,6 +62,8 @@ cmd_start() {
 
     local BRANCH="$JIRA_ID/$desc"
     echo "creating branch $BRANCH"
+    git checkout development
+    git pull origin development 2>/dev/null
     git checkout -b $BRANCH development
 
     echo "updating issue $JIRA_ID"
