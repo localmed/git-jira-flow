@@ -5,7 +5,7 @@ if [ "$DEBUG" = "yes" ]; then
 fi
 set -e
 
-export GITISSUE_VERSION="0.1.0"
+export GITISSUE_VERSION="0.1.1"
 
 # The sed expression here replaces all backslashes by forward slashes.
 # This helps our Windows users, while not bothering our Unix users.
