@@ -1,0 +1,85 @@
+#!/bin/sh
+
+puts_step() {
+    echo "-----> $@"
+}
+
+puts_warn() {
+    echo " !     $@" >&2
+}
+
+fail() {
+    puts_warn "$@"
+    exit 1
+}
+
+# Executes a command using Jira's CLI. This will automatically read your server
+# and authentication configuration from your .gitconfig:
+#
+#   [jira]
+#     user = [username]
+#     password = [password]
+#     server = [server]
+jira_cmd() {
+    if [[ -z "$JIRA_CMD" ]]; then
+        init_jira
+    fi
+    $JIRA_CMD "$@"
+}
+
+# Reads Jira configuration from the .gitconfig and sets global vars.
+init_jira() {
+    JIRA_SERVER=$(git config jira.server || true)
+    JIRA_USER=$(git config jira.user || true)
+    JIRA_PASSWORD=$(git config jira.password || true)
+    JIRA_CLI=$(git config jira.cli || true)
+    JIRA_CLI=${JIRA_CLI:-"jira"}
+
+    if [ -z "$JIRA_SERVER" ] || [ -z "$JIRA_USER" ] || [ -z "$JIRA_PASSWORD" ]; then
+        _show_jira_config_help
+        exit 1
+    fi
+
+    JIRA_CMD="$JIRA_CLI --server $JIRA_SERVER --user $JIRA_USER --password $JIRA_PASSWORD"
+}
+
+_show_jira_config_help() {
+    echo "git-issue requires Jira API configuration to be set in your .gitconfig:"
+    echo
+    echo "  [jira]"
+    echo "    server = <Jira server URL>"
+    echo "    user = <your username>"
+    echo "    password = <your password>"
+    echo
+    echo "And optionally:"
+    echo
+    echo "  [jira]"
+    echo "    cli = <path to Jira CLI>"
+}
+
+# Checks if the given string looks like a valid Jira issue key, failing fast
+# if it does not.
+check_jira_key() {
+    [[ "$1" =~ ^[A-Z]+-[0-9]+$ ]] || fail "'$1' is not a vaild Jira issue key"
+}
+
+# Echos the summary for the given Jira issue key. This will fail if the
+# issue does not exist.
+get_jira_summary() {
+    local jira_key="$1"
+    local jira_summary=`jira_cmd -a getFieldValue --field Summary --issue $jira_key 2>/dev/null | sed -e '1d'`
+    test -n "$jira_summary" || fail "Issue '$jira_key' does not exist"
+    echo "$jira_summary"
+}
+
+git_local_branches() {
+    git branch --no-color | sed 's/^[* ] //'
+}
+
+git_current_branch() {
+    git branch --no-color | grep '^\* ' | grep -v 'no branch' | sed 's/^* //g'
+}
+
+git_issue_branch() {
+    echo "$(git_local_branches)" | grep "$1/"
+}
