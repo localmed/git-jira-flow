@@ -1,0 +1,70 @@
+#!/bin/sh
+
+usage() {
+    echo "usage: git issue start <issuekey> [-b] <name>"
+    echo
+    echo "<issuekey> should be the Jira key for the issue you'd like to work on:"
+    echo
+    echo "   git issue start WEB-12 -b cleanup"
+    echo
+    echo "Optionally, you can name the branch inline:"
+    echo
+    echo "   git issue start WEB-12/cleanup"
+}
+
+cmd_start() {
+    if [ "$#" -lt 1 ]; then
+        usage; exit 1
+    fi
+    init_jira
+
+    local issue=(${1//\// }); shift
+    local issue_key=${issue[0]}
+    local issue_name=${issue[1]}
+    local issue_summary;
+    local issue_branch;
+    check_jira_key "$issue_key"
+
+    puts_step "Starting issue: $issue_key"
+
+    issue_summary=$(get_jira_summary "$issue_key")
+    if [[ -z "$issue_name" ]]; then
+        parse_opts "$@"
+        issue_name="$BRANCH_NAME"
+    fi
+    if [[ -z "$issue_name" ]]; then
+        issue_name=${issue_summary// /_}
+    fi
+    issue_branch="$issue_key/$issue_name"
+
+    puts_step "Creating branch: $issue_branch"
+
+    git checkout development
+    git pull origin development 2>/dev/null
+    git checkout -b $issue_branch development
+
+    puts_step "Updating issue: $issue_key"
+
+    jira_cmd -a progressIssue --issue $issue_key --step "In Progress"
+    jira_cmd -a updateIssue --issue $issue_key --assignee $JIRA_USER >/dev/null
+}
+
+cmd_help() {
+    usage
+    exit 0
+}
+
+parse_opts() {
+    while getopts ":b:" OPTION
+    do
+        case "$OPTION" in
+            b)
+                BRANCH_NAME="$OPTARG"
+                ;;
+            \?)
+                usage
+                exit 1
+                ;;
+        esac
+    done
+}

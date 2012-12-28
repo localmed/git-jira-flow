@@ -1,121 +1,58 @@
 #!/bin/sh
 
-# enable debug mode
 if [ "$DEBUG" = "yes" ]; then
     set -x
 fi
-
 set -e
 
+export GITISSUE_VERSION="0.1.0"
+
+# The sed expression here replaces all backslashes by forward slashes.
+# This helps our Windows users, while not bothering our Unix users.
+export GITISSUE_DIR=$(dirname "$(echo "$0" | sed -e 's,\\,/,g')")
+
+
 usage() {
-    echo "usage: git issue <start|finish> <issue>"
-}
-
-fail() {
-    echo $@
-    usage
-    exit 1
-}
-
-parse_opts() {
-    while getopts ":b:" OPTION
-    do
-        case "$OPTION" in
-            b) BRANCH_DESC="$OPTARG";;
-            \?) fail "$OPTARG is not a valid argument";;
-        esac
-    done
-}
-
-get_jira_id() {
-    local jira_id="$1"
-    [[ "$jira_id" =~ ^[A-Z]+-[0-9]+$ ]] || fail "$jira_id is not a vaild JIRA ID"
-    echo "$jira_id"
-}
-
-git_local_branches() {
-    git branch --no-color | sed 's/^[* ] //'
-}
-
-git_current_branch() {
-    git branch --no-color | grep '^\* ' | grep -v 'no branch' | sed 's/^* //g'
-}
-
-git_issue_branch() {
-    echo "$(git_local_branches)" | grep "$1/"
-}
-
-cmd_start() {
-    JIRA_ID=$(get_jira_id "$@"); shift
-    parse_opts "$@"
-    echo "Starting $JIRA_ID"
-
-    SUMMARY=`$JIRA_CMD -a getFieldValue --field Summary --issue $JIRA_ID 2>/dev/null | sed -e '1d'`
-    test -n "$SUMMARY" || fail "Issue $1 Does Not Exist."
-
-    local desc="$SUMMARY"
-    if [[ -n "$BRANCH_DESC" ]]; then
-        desc="$BRANCH_DESC"
-    fi
-
-    desc=$(echo "$desc" | tr ' ' '_')
-
-    local BRANCH="$JIRA_ID/$desc"
-    echo "creating branch $BRANCH"
-    git checkout development
-    git pull origin development 2>/dev/null
-    git checkout -b $BRANCH development
-
-    echo "updating issue $JIRA_ID"
-    $JIRA_CMD -a progressIssue --issue $JIRA_ID --step "In Progress"
-    $JIRA_CMD -a updateIssue --issue $JIRA_ID --assignee $JIRA_USER >/dev/null 2>&1
-}
-
-cmd_finish() {
-    if [ -n "$1" ]; then
-        local BRANCH=$(git_issue_branch "$1")
-    elif [ -z "$BRANCH" ]; then
-        local BRANCH=$(git_current_branch)
-    fi
-
-    local ISSUEKEY=${BRANCH%/*}
-
-    test -n "$BRANCH" || fail "Issue $1 is not currently being worked on."
-    echo "Finishing $BRANCH"
-
-    git checkout development
-    git pull origin development 2>/dev/null
-    git merge --no-ff $BRANCH -m "Closing $ISSUEKEY #resolve"
-    git branch -d $BRANCH
-    git push origin development 2>/dev/null
-
-    echo "updating issue $ISSUEKEY"
-    $JIRA_CMD -a progressIssue --issue $ISSUEKEY --step "Resolved"
+    echo "usage: git issue <subcommand>"
+    echo
+    echo "Available subcommands are:"
+    echo "   start    Create a new issue branch & set status to 'In Progress'"
+    echo "   finish   Merge issue branch & set status to 'Resolved'"
 }
 
 main() {
     if [ "$#" -lt 1 ]; then
-        fail "Missing Subcommand."
-    fi
-    JIRA_SERVER=$(git config jira.server || true)
-    JIRA_USER=$(git config jira.user || true)
-    JIRA_PASSWORD=$(git config jira.password || true)
-    JIRA_CLI=$(git config jira.cli || true)
-
-    test -n "$JIRA_SERVER" || fail "Missing JIRA Server Config."
-    test -n "$JIRA_USER" || fail "Missing JIRA User Config."
-    test -n "$JIRA_PASSWORD" || fail "Missing JIRA Password Config."
-    test -n "$JIRA_CLI" || fail "Missing JIRA CLI Config."
-
-    JIRA_CMD="$JIRA_CLI --server $JIRA_SERVER --user $JIRA_USER --password $JIRA_PASSWORD"
-
-    SUBACTION="$1"; shift
-
-    if ! type "cmd_$SUBACTION" >/dev/null 2>&1; then
-        fail "Unknown Subcommand: $SUBACTION"
+        usage; exit 1
     fi
 
-    cmd_$SUBACTION "$@"
+    source "$GITISSUE_DIR/gitissue-common"
+
+    local subcommand="$1"; shift
+    case $subcommand in
+        "-h"|"--help"|"help")
+            usage; exit 0
+            ;;
+        "-v"|"--version")
+            subcommand="version"
+            ;;
+    esac
+
+    if [ ! -e "$GITISSUE_DIR/git-issue-$subcommand" ]; then
+        usage; exit 1
+    fi
+    source "$GITISSUE_DIR/git-issue-$subcommand"
+
+    case $1 in
+        "-h"|"--help"|"help")
+            subcommand="help"
+            ;;
+    esac
+
+    if [ ! type "cmd_$subcommand" >/dev/null 2>&1 ]; then
+        usage; exit 1
+    fi
+
+    cmd_$subcommand "$@"
 }
 
 main "$@"
