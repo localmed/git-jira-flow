@@ -1,15 +1,16 @@
 #!/bin/sh
 
 usage() {
-    echo "usage: git issue finish <issuekey>"
+    echo "usage: git issue finish <ISSUE_KEY>"
 }
 
 cmd_finish() {
+    local branch
     if [ -n "$1" ]; then
-        local branch=$(git_issue_branch "$1")
+        branch=$(git_issue_branch "$1")
         test -n "$branch" || fail "Issue '$1' is not currently being worked on"
-    elif [ -z "$branch" ]; then
-        local branch=$(git_current_branch)
+    else
+        branch=$(git_current_branch)
     fi
 
     local issue_key=${branch%/*}

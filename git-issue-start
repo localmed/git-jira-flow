@@ -1,9 +1,9 @@
 #!/bin/sh
 
 usage() {
-    echo "usage: git issue start <issuekey> [-b] <name>"
+    echo "usage: git issue start <ISSUE_KEY> [-b <BRANCH_NAME>]"
     echo
-    echo "<issuekey> should be the Jira key for the issue you'd like to work on:"
+    echo "<ISSUE_KEY> should be the Jira key for the issue you'd like to work on:"
     echo
     echo "   git issue start WEB-12 -b cleanup"
     echo
@@ -21,8 +21,8 @@ cmd_start() {
     local issue=(${1//\// }); shift
     local issue_key=${issue[0]}
     local issue_name=${issue[1]}
-    local issue_summary;
-    local issue_branch;
+    local issue_summary
+    local issue_branch
     check_jira_key "$issue_key"
 
     puts_step "Starting issue: $issue_key"

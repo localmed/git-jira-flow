@@ -1,15 +1,23 @@
 git-jira-flow
 =============
 
-Git extension that uses the jira-cli to match git and jira workflows
+Git extension that uses the jira-cli to match git and jira workflows.
 
-## Installation
+Installation
+------------
 
-Add `git-issue` to a folder somewhere in your path.
-
-## Usage
+Add `git-issue` to a folder somewhere in your path. Or install from our homebrew tap:
 
 ``` bash
-$ git issue start <JIRA-ID> [-b <DESCRIPTION>]
-$ git issue finish [JIRA-ID]
+$ brew tap localmed/tap
+$ brew install git-jira-flow
+```
+
+Usage
+-----
+
+``` bash
+$ git issue start <ISSUE_KEY> [-b <BRANCH_NAME>]
+$ git issue finish [ISSUE_KEY]
+$ git issue help
 ```
