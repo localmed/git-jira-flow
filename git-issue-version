@@ -1,0 +1,14 @@
+#!/bin/sh
+
+usage() {
+  echo "usage: git issue version"
+}
+
+cmd_version() {
+  echo "$GITISSUE_VERSION"
+}
+
+cmd_help() {
+  usage
+  exit 0
+}

@@ -1,0 +1,35 @@
+#!/bin/sh
+
+usage() {
+    echo "usage: git issue finish <issuekey>"
+}
+
+cmd_finish() {
+    if [ -n "$1" ]; then
+        local branch=$(git_issue_branch "$1")
+        test -n "$branch" || fail "Issue '$1' is not currently being worked on"
+    elif [ -z "$branch" ]; then
+        local branch=$(git_current_branch)
+    fi
+
+    local issue_key=${branch%/*}
+    check_jira_key "$issue_key"
+    get_jira_summary "$issue_key"
+
+    puts_step "Finishing branch: $branch"
+
+    git checkout development
+    git pull origin development 2>/dev/null
+    git merge --no-ff $branch -m "Closing $issue_key #resolved #fixed"
+    git branch -d $branch
+    git push origin development 2>/dev/null
+
+    puts_step "Updating issue: $issue_key"
+
+    jira_cmd -a progressIssue --issue $issue_key --step "Resolved"
+}
+
+cmd_help() {
+    usage
+    exit 0
+}
