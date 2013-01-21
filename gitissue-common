@@ -18,29 +18,46 @@ fail() {
 #
 #   [jira]
 #     user = [username]
-#     password = [password]
 #     server = [server]
 jira_cmd() {
-    if [[ -z "$JIRA_CMD" ]]; then
-        init_jira
+    if [ -z "$JIRA_LOGIN_TOKEN" ]; then
+        # This may not work if the result of jira_cmd is stored as a variable.
+        # There must be a way around this.
+        login_jira
     fi
-    $JIRA_CMD "$@"
+    $JIRA_CLI --server "$JIRA_SERVER" --login "$JIRA_LOGIN_TOKEN" --password dummy "$@"
 }
 
-# Reads Jira configuration from the .gitconfig and sets global vars.
-init_jira() {
+# Attempts to login to Jira and store the token for reuse.
+login_jira() {
+    if [ -z "$JIRA_SERVER" ]; then
+        get_jira_config
+    fi
+    JIRA_LOGIN_TOKEN=$(get_cache login_token)
+
+    if [ -z "$JIRA_LOGIN_TOKEN" ]; then
+        echo "Enter your Jira Password: \c"
+        read -s password
+        echo
+        puts_step "Logging into Jira as '$JIRA_USER'"
+        JIRA_LOGIN_TOKEN=$($JIRA_CLI --server $JIRA_SERVER --user $JIRA_USER --password $password -a login)
+        set_cache login_token "$JIRA_LOGIN_TOKEN"
+    else
+        puts_step "Logging into Jira using token"
+    fi
+}
+
+# Reads the Jira configuration from your .gitconfig file.
+get_jira_config() {
     JIRA_SERVER=$(git config jira.server || true)
     JIRA_USER=$(git config jira.user || true)
-    JIRA_PASSWORD=$(git config jira.password || true)
     JIRA_CLI=$(git config jira.cli || true)
     JIRA_CLI=${JIRA_CLI:-"jira"}
 
-    if [ -z "$JIRA_SERVER" ] || [ -z "$JIRA_USER" ] || [ -z "$JIRA_PASSWORD" ]; then
+    if [ -z "$JIRA_SERVER" ] || [ -z "$JIRA_USER" ]; then
         _show_jira_config_help
         exit 1
     fi
-
-    JIRA_CMD="$JIRA_CLI --server $JIRA_SERVER --user $JIRA_USER --password $JIRA_PASSWORD"
 }
 
 _show_jira_config_help() {
@@ -49,7 +66,6 @@ _show_jira_config_help() {
     echo "  [jira]"
     echo "    server = <Jira server URL>"
     echo "    user = <your username>"
-    echo "    password = <your password>"
     echo
     echo "And optionally:"
     echo
@@ -67,7 +83,7 @@ check_jira_key() {
 # issue does not exist.
 get_jira_summary() {
     local jira_key="$1"
-    local jira_summary=`jira_cmd -a getFieldValue --field Summary --issue $jira_key 2>/dev/null | sed -e '1d'`
+    local jira_summary=$(jira_cmd -a getFieldValue --field Summary --issue $jira_key 2>/dev/null | sed -e '1d')
     test -n "$jira_summary" || fail "Issue '$jira_key' does not exist"
     echo "$jira_summary"
 }
@@ -82,4 +98,26 @@ git_current_branch() {
 
 git_issue_branch() {
     echo "$(git_local_branches)" | grep "$1/"
+}
+
+# Attempts to get cached data from the GITISSUE_CACHE_DIR.
+#
+# Usage:
+#   data=$(get_cache some_key)
+get_cache() {
+    key="$1"
+    if [ -f "$GITISSUE_CACHE_DIR/$key" ]; then
+        cat "$GITISSUE_CACHE_DIR/$key"
+    fi
+}
+
+# Stores the given data to a file in the GITISSUE_CACHE_DIR
+#
+# Usage:
+#   set_cache some_key "$some_data"
+set_cache() {
+    key="$1"
+    value="$2"
+    mkdir -p "$GITISSUE_CACHE_DIR"
+    echo "$2" > "$GITISSUE_CACHE_DIR/$key"
 }
