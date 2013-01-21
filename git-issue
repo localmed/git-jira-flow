@@ -5,7 +5,7 @@ if [ "$DEBUG" = "yes" ]; then
 fi
 set -e
 
-export GITISSUE_VERSION="0.1.1"
+export GITISSUE_VERSION="0.2.0"
 export GITISSUE_CACHE_DIR=${GITISSUE_CACHE_DIR:-"$HOME/.gitissue"}
 
 # The sed expression here replaces all backslashes by forward slashes.
