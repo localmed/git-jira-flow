@@ -38,9 +38,8 @@ git-jira-flow requires Jira API configuration to be set in your .gitconfig:
 [jira]
   server = <Jira server URL>
   user = <your username>
-  password = <your password>
 ```
-    
+
 And optionally:
 
 ```
