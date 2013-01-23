@@ -105,9 +105,10 @@ git_issue_branch() {
 # Usage:
 #   data=$(get_cache some_key)
 get_cache() {
-    key="$1"
-    if [ -f "$GITISSUE_CACHE_DIR/$key" ]; then
-        cat "$GITISSUE_CACHE_DIR/$key"
+    local key="$1"
+    local file="$GITISSUE_CACHE_DIR/$key"
+    if [ $(find $file -mmin -$GITISSUE_CACHE_EXPIRATION) ]; then
+        cat "$file"
     fi
 }
 
@@ -116,8 +117,8 @@ get_cache() {
 # Usage:
 #   set_cache some_key "$some_data"
 set_cache() {
-    key="$1"
-    value="$2"
+    local key="$1"
+    local value="$2"
     mkdir -p "$GITISSUE_CACHE_DIR"
     echo "$2" > "$GITISSUE_CACHE_DIR/$key"
 }
