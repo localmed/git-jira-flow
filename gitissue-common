@@ -35,10 +35,15 @@ login_jira() {
     fi
     JIRA_LOGIN_TOKEN=$(get_cache login_token)
 
-    if [ -z "$JIRA_LOGIN_TOKEN" ]; then
-        echo "Enter your Jira Password: \c"
-        read -s password
-        echo
+    if [ -z "$JIRA_LOGIN_TOKEN" ]; then        
+        local stored_password=$(get_stored_password)
+        if [ -n "$stored_password" ]; then
+            password="$stored_password"
+        else
+            echo "Enter your Jira Password: \c"
+            read -s password
+            echo
+        fi
         puts_step "Logging into Jira as '$JIRA_USER'"
         JIRA_LOGIN_TOKEN=$($JIRA_CLI --server $JIRA_SERVER --user $JIRA_USER --password $password -a login)
         set_cache login_token "$JIRA_LOGIN_TOKEN"
@@ -121,4 +126,27 @@ set_cache() {
     local value="$2"
     mkdir -p "$GITISSUE_CACHE_DIR"
     echo "$2" > "$GITISSUE_CACHE_DIR/$key"
+}
+
+# Checks the .netrc file for stored password
+# 
+# Usage:
+#   PASSWORD=$(get_stored_password)
+get_stored_password() {
+    if [ -z "$JIRA_SERVER" ] || [ -z "$JIRA_USER" ]; then
+        get_jira_config
+    fi
+    
+    local netrc_path="$HOME/.netrc"
+    local machine=$(_parse_machine_name "$JIRA_SERVER")
+    local section=$(cat "$netrc_path" | grep -A 2 "$machine")
+
+    if [ -n "$section" ]; then
+        echo "$section" | awk "{if (\$1==\"password\") print \$2}"
+    fi
+}
+
+_parse_machine_name() {
+    local url="$1"
+    echo "$url" | sed -e "s!\http\(s\)\{0,1\}://*!!g"
 }

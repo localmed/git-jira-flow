@@ -7,7 +7,7 @@ set -e
 
 export GITISSUE_VERSION="0.2.1"
 export GITISSUE_CACHE_DIR=${GITISSUE_CACHE_DIR:-"$HOME/.gitissue"}
-export GITISSUE_CACHE_EXPIRATION=${GITISSUE_CACHE_EXPIRATION:-120}
+export GITISSUE_CACHE_EXPIRATION=${GITISSUE_CACHE_EXPIRATION:-30}
 
 # The sed expression here replaces all backslashes by forward slashes.
 # This helps our Windows users, while not bothering our Unix users.
