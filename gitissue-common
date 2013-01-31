@@ -142,8 +142,17 @@ get_stored_password() {
     local section=$(cat "$netrc_path" | grep -A 2 "$machine")
 
     if [ -n "$section" ]; then
-        echo "$section" | awk "{if (\$1==\"password\") print \$2}"
+        local login=$(_parse_setting_from_section "$section" login)
+        if [[ "$login" == "$JIRA_USER" ]]; then
+            _parse_setting_from_section "$section" password
+        fi
     fi
+}
+
+_parse_setting_from_section() {
+    local section="$1"
+    local setting="$2"
+    echo "$section" | awk "{if (\$1==\"$setting\") print \$2}"
 }
 
 _parse_machine_name() {
