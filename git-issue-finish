@@ -1,7 +1,32 @@
 #!/bin/sh
 
 function usage() {
-    echo "usage: git issue finish <ISSUE_KEY> [-f]"
+    cat <<USAGE
+usage: git issue finish [<issuekey>] [-f]
+
+Arguments:
+    <issuekey>  The Jira key for the issue to work on.
+
+Options:
+    -f          Finish a hotfix branch.
+
+Examples:
+    # Finish the current working branch:
+    $ git issue finish
+
+    # Finish a branch for the given issue key:
+    $ git issue finish WEB-12
+
+    # Finish a hotfix branch:
+    $ git issue finish -f
+
+    # -f is not required if the name of the current
+    # branch starts with an '!'
+    $ git branch
+      master
+    * !WEB-12/cleanup
+    $ git issue finish
+USAGE
 }
 
 function cmd_finish() {

@@ -2,15 +2,28 @@
 
 function usage() {
     cat <<USAGE
-usage: git issue start <ISSUE_KEY> [-b <BRANCH_NAME>]
+usage: git issue start [<issuekey>] [-b <branchname>] [-f]
 
-<ISSUE_KEY> should be the Jira key for the issue you'd like to work on:
+Arguments:
+    <issuekey>       The Jira key for the issue to work on.
 
-   git issue start WEB-12 -b cleanup
+Options:
+    -b <branchname>  The descriptive name of the branch.
+    -f               Start a hotfix branch.
 
-Optionally, you can name the branch inline:
+Examples:
+    # Start working on WEB-12. The descriptive name
+    # will be generated from the Jira issue summary.
+    $ git issue start WEB-12
 
-   git issue start WEB-12/cleanup
+    # Start working on a hotfix branch:
+    $ git issue start WEB-12 -f
+
+    # Specify the descriptive name of the branch:
+    $ git issue start WEB-12 -b cleanup
+
+    # Or this will do the same thing:
+    $ git issue start WEB-12/cleanup
 USAGE
 }
 
