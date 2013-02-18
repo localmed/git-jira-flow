@@ -1,18 +1,20 @@
 #!/bin/sh
 
-usage() {
-    echo "usage: git issue start <ISSUE_KEY> [-b <BRANCH_NAME>]"
-    echo
-    echo "<ISSUE_KEY> should be the Jira key for the issue you'd like to work on:"
-    echo
-    echo "   git issue start WEB-12 -b cleanup"
-    echo
-    echo "Optionally, you can name the branch inline:"
-    echo
-    echo "   git issue start WEB-12/cleanup"
+function usage() {
+    cat <<USAGE
+usage: git issue start <ISSUE_KEY> [-b <BRANCH_NAME>]
+
+<ISSUE_KEY> should be the Jira key for the issue you'd like to work on:
+
+   git issue start WEB-12 -b cleanup
+
+Optionally, you can name the branch inline:
+
+   git issue start WEB-12/cleanup
+USAGE
 }
 
-cmd_start() {
+function cmd_start() {
     if [ "$#" -lt 1 ]; then
         usage; exit 1
     fi
@@ -46,12 +48,12 @@ cmd_start() {
     jira_cmd -a updateIssue --issue "$issue_key" --assignee "$JIRA_USER" >/dev/null
 }
 
-cmd_help() {
+function cmd_help() {
     usage
     exit 0
 }
 
-parse_opts() {
+function parse_opts() {
     while getopts ":b:" OPTION
     do
         case "$OPTION" in

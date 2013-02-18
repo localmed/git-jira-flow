@@ -1,14 +1,14 @@
 #!/bin/sh
 
-puts_step() {
+function puts_step() {
     echo "-----> $@"
 }
 
-puts_warn() {
+function puts_warn() {
     echo " !     $@" >&2
 }
 
-fail() {
+function fail() {
     puts_warn "$@"
     exit 1
 }
@@ -19,7 +19,7 @@ fail() {
 #   [jira]
 #     user = [username]
 #     server = [server]
-jira_cmd() {
+function jira_cmd() {
     if [ -z "$JIRA_LOGIN_TOKEN" ]; then
         # This may not work if the result of jira_cmd is stored as a variable.
         # There must be a way around this.
@@ -29,13 +29,13 @@ jira_cmd() {
 }
 
 # Attempts to login to Jira and store the token for reuse.
-login_jira() {
+function login_jira() {
     if [ -z "$JIRA_SERVER" ]; then
         get_jira_config
     fi
     JIRA_LOGIN_TOKEN=$(get_cache login_token)
 
-    if [ -z "$JIRA_LOGIN_TOKEN" ]; then        
+    if [ -z "$JIRA_LOGIN_TOKEN" ]; then
         local stored_password=$(get_stored_password)
         if [ -n "$stored_password" ]; then
             password="$stored_password"
@@ -53,7 +53,7 @@ login_jira() {
 }
 
 # Reads the Jira configuration from your .gitconfig file.
-get_jira_config() {
+function get_jira_config() {
     JIRA_SERVER=$(git config jira.server || true)
     JIRA_USER=$(git config jira.user || true)
     JIRA_CLI=$(git config jira.cli || true)
@@ -65,43 +65,45 @@ get_jira_config() {
     fi
 }
 
-_show_jira_config_help() {
-    echo "git-issue requires Jira API configuration to be set in your .gitconfig:"
-    echo
-    echo "  [jira]"
-    echo "    server = <Jira server URL>"
-    echo "    user = <your username>"
-    echo
-    echo "And optionally:"
-    echo
-    echo "  [jira]"
-    echo "    cli = <path to Jira CLI>"
+function _show_jira_config_help() {
+    cat <<JIRA_CONFIG
+git-issue requires Jira API configuration to be set in your .gitconfig:
+
+  [jira]
+    server = <Jira server URL>
+    user = <your username>
+
+And optionally:
+
+  [jira]
+    cli = <path to Jira CLI>
+JIRA_CONFIG
 }
 
 # Checks if the given string looks like a valid Jira issue key, failing fast
 # if it does not.
-check_jira_key() {
+function check_jira_key() {
     [[ "$1" =~ ^[A-Z]+-[0-9]+$ ]] || fail "'$1' is not a vaild Jira issue key"
 }
 
 # Echos the summary for the given Jira issue key. This will fail if the
 # issue does not exist.
-get_jira_summary() {
+function get_jira_summary() {
     local jira_key="$1"
     local jira_summary=$(jira_cmd -a getFieldValue --field Summary --issue $jira_key 2>/dev/null | sed -e '1d')
     test -n "$jira_summary" || fail "Issue '$jira_key' does not exist"
     echo "$jira_summary"
 }
 
-git_local_branches() {
-    git branch --no-color | sed 's/^[* ] //'
+function git_local_branches() {
+    git branch --no-color | sed "s/^[* ] //"
 }
 
-git_current_branch() {
-    git branch --no-color | grep '^\* ' | grep -v 'no branch' | sed 's/^* //g'
+function git_current_branch() {
+    git branch --no-color | grep "^\* " | grep -v "no branch" | sed "s/^* //g"
 }
 
-git_issue_branch() {
+function git_issue_branch() {
     echo "$(git_local_branches)" | grep "$1/"
 }
 
@@ -109,7 +111,7 @@ git_issue_branch() {
 #
 # Usage:
 #   data=$(get_cache some_key)
-get_cache() {
+function get_cache() {
     local key="$1"
     local file="$GITISSUE_CACHE_DIR/$key"
     if [ $(find $file -mmin -$GITISSUE_CACHE_EXPIRATION) ]; then
@@ -121,7 +123,7 @@ get_cache() {
 #
 # Usage:
 #   set_cache some_key "$some_data"
-set_cache() {
+function set_cache() {
     local key="$1"
     local value="$2"
     mkdir -p "$GITISSUE_CACHE_DIR"
@@ -129,14 +131,14 @@ set_cache() {
 }
 
 # Checks the .netrc file for stored password
-# 
+#
 # Usage:
 #   PASSWORD=$(get_stored_password)
-get_stored_password() {
+function get_stored_password() {
     if [ -z "$JIRA_SERVER" ] || [ -z "$JIRA_USER" ]; then
         get_jira_config
     fi
-    
+
     local netrc_path="$HOME/.netrc"
     local machine=$(_parse_machine_name "$JIRA_SERVER")
     local section=$(cat "$netrc_path" | grep -A 2 "$machine")
@@ -149,13 +151,13 @@ get_stored_password() {
     fi
 }
 
-_parse_setting_from_section() {
+function _parse_setting_from_section() {
     local section="$1"
     local setting="$2"
     echo "$section" | awk "{if (\$1==\"$setting\") print \$2}"
 }
 
-_parse_machine_name() {
+function _parse_machine_name() {
     local url="$1"
     echo "$url" | sed -e "s!\http\(s\)\{0,1\}://*!!g"
 }

@@ -1,10 +1,10 @@
 #!/bin/sh
 
-usage() {
+function usage() {
     echo "usage: git issue finish <ISSUE_KEY>"
 }
 
-cmd_finish() {
+function cmd_finish() {
     login_jira
 
     local branch
@@ -22,7 +22,7 @@ cmd_finish() {
     puts_step "Finishing branch: $branch"
     git checkout development
     git pull origin development 2>/dev/null
-    git merge --no-ff "$branch" -m "Closing $issue_key #resolved #fixed"
+    git merge --no-ff "$branch" -m "Close $issue_key #resolved #fixed"
     git branch -d "$branch"
     git push origin development 2>/dev/null
 
@@ -30,7 +30,7 @@ cmd_finish() {
     jira_cmd -a progressIssue --issue "$issue_key" --step "Resolved"
 }
 
-cmd_help() {
+function cmd_help() {
     usage
     exit 0
 }
