@@ -18,19 +18,21 @@ function cmd_start() {
     if [ "$#" -lt 1 ]; then
         usage; exit 1
     fi
-    login_jira
-
     local issue=(${1//\// }); shift
+    parse_opts "$@"
+
+    login_jira
     local issue_key=${issue[0]}
     local issue_name=${issue[1]}
     local issue_summary
     local issue_branch
+    local start_branch
+    local remote
     check_jira_key "$issue_key"
 
     puts_step "Starting issue: $issue_key"
     issue_summary=$(get_jira_summary "$issue_key")
     if [[ -z "$issue_name" ]]; then
-        parse_opts "$@"
         issue_name="$BRANCH_NAME"
     fi
     if [[ -z "$issue_name" ]]; then
@@ -38,10 +40,19 @@ function cmd_start() {
     fi
     issue_branch="$issue_key/$issue_name"
 
-    puts_step "Creating branch: $issue_branch"
-    git checkout development
-    git pull origin development 2>/dev/null
-    git checkout -b "$issue_branch" development
+    if [[ -n "$HOTFIX" ]]; then
+        issue_branch="!$issue_branch"
+        start_branch="$JIRA_MASTER_BRANCH"
+        remote="$JIRA_MASTER_REMOTE"
+    else
+        start_branch="$JIRA_DEVELOPMENT_BRANCH"
+        remote="$JIRA_DEVELOPMENT_REMOTE"
+    fi
+
+    puts_step "Creating branch: $issue_branch from '$start_branch'"
+    git checkout "$start_branch"
+    git pull "$remote" "$start_branch" 2>/dev/null
+    git checkout -b "$issue_branch" "$start_branch"
 
     puts_step "Updating issue: $issue_key"
     jira_cmd -a progressIssue --issue "$issue_key" --step "In Progress"
@@ -54,16 +65,15 @@ function cmd_help() {
 }
 
 function parse_opts() {
-    while getopts ":b:" OPTION
+    while getopts ":fb:" option
     do
-        case "$OPTION" in
+        case "$option" in
             b)
-                BRANCH_NAME="$OPTARG"
-                ;;
+                BRANCH_NAME="$OPTARG";;
+            f)
+                HOTFIX=true;;
             \?)
-                usage
-                exit 1
-                ;;
+                usage; exit 1;;
         esac
     done
 }

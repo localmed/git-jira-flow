@@ -31,7 +31,7 @@ function jira_cmd() {
 # Attempts to login to Jira and store the token for reuse.
 function login_jira() {
     if [ -z "$JIRA_SERVER" ]; then
-        get_jira_config
+        load_jira_config
     fi
     JIRA_LOGIN_TOKEN=$(get_cache login_token)
 
@@ -53,16 +53,26 @@ function login_jira() {
 }
 
 # Reads the Jira configuration from your .gitconfig file.
-function get_jira_config() {
-    JIRA_SERVER=$(git config jira.server || true)
-    JIRA_USER=$(git config jira.user || true)
-    JIRA_CLI=$(git config jira.cli || true)
-    JIRA_CLI=${JIRA_CLI:-"jira"}
+function load_jira_config() {
+    JIRA_SERVER=$(_get_git_config jira.server)
+    JIRA_USER=$(_get_git_config jira.user)
 
     if [ -z "$JIRA_SERVER" ] || [ -z "$JIRA_USER" ]; then
         _show_jira_config_help
         exit 1
     fi
+
+    JIRA_CLI=$(_get_git_config jira.cli "jira")
+    JIRA_DEVELOPMENT_BRANCH=$(_get_git_config jiraflow.development.branch "development")
+    JIRA_DEVELOPMENT_REMOTE=$(_get_git_config jiraflow.development.remote "origin")
+    JIRA_MASTER_BRANCH=$(_get_git_config jiraflow.master.branch "master")
+    JIRA_MASTER_REMOTE=$(_get_git_config jiraflow.master.remote "origin")
+}
+
+function _get_git_config() {
+    local key="$1"
+    local default="$2"
+    echo $(git config $key || echo $2)
 }
 
 function _show_jira_config_help() {
@@ -136,7 +146,7 @@ function set_cache() {
 #   PASSWORD=$(get_stored_password)
 function get_stored_password() {
     if [ -z "$JIRA_SERVER" ] || [ -z "$JIRA_USER" ]; then
-        get_jira_config
+        load_jira_config
     fi
 
     local netrc_path="$HOME/.netrc"

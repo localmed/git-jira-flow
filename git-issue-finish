@@ -1,30 +1,57 @@
 #!/bin/sh
 
 function usage() {
-    echo "usage: git issue finish <ISSUE_KEY>"
+    echo "usage: git issue finish <ISSUE_KEY> [-f]"
 }
 
 function cmd_finish() {
-    login_jira
+    parse_args "$@"
+    local branch="$BRANCH_NAME"
+    local hotfix="$HOTFIX"
 
-    local branch
-    if [ -n "$1" ]; then
-        branch=$(git_issue_branch "$1")
-        test -n "$branch" || fail "Issue '$1' is not currently being worked on"
+    if [[ -n "$branch" ]]; then
+        check_jira_key "$branch"
+        local branch_name=$(git_issue_branch $branch)
+        test -n "$branch_name" || fail "Issue '$branch' is not currently being worked on"
+        branch="$branch_name"
     else
         branch=$(git_current_branch)
     fi
 
     local issue_key=${branch%/*}
+    if [[ ${issue_key:0:1} == "!" ]]; then
+        hotfix=true
+        issue_key=${issue_key:1}
+    fi
+
+    login_jira
     check_jira_key "$issue_key"
     summary=$(get_jira_summary $issue_key)
 
+    if [[ -n "$hotfix" ]]; then
+        start_branch="$JIRA_MASTER_BRANCH"
+        remote="$JIRA_MASTER_REMOTE"
+    else
+        start_branch="$JIRA_DEVELOPMENT_BRANCH"
+        remote="$JIRA_DEVELOPMENT_REMOTE"
+    fi
+
     puts_step "Finishing branch: $branch"
-    git checkout development
-    git pull origin development 2>/dev/null
+    git checkout "$start_branch"
+    git pull "$remote" "$start_branch" 2>/dev/null
     git merge --no-ff "$branch" -m "Close $issue_key #resolved #fixed"
     git branch -d "$branch"
-    git push origin development 2>/dev/null
+    git push "$remote" "$start_branch" 2>/dev/null
+
+    if [[ -n "$hotfix" ]]; then
+        local rebase_branch="$JIRA_DEVELOPMENT_BRANCH"
+        local rebase_origin="$JIRA_DEVELOPMENT_REMOTE"
+        puts_step "Rebasing branch: $rebase_branch"
+        git checkout "$rebase_branch"
+        git pull "$rebase_origin" "$rebase_branch" 2>/dev/null
+        git rebase "$start_branch"
+        git push "$rebase_origin" "$rebase_branch" 2>/dev/null
+    fi
 
     puts_step "Updating issue: $issue_key"
     jira_cmd -a progressIssue --issue "$issue_key" --step "Resolved"
@@ -33,4 +60,22 @@ function cmd_finish() {
 function cmd_help() {
     usage
     exit 0
+}
+
+function parse_args() {
+    while (( "$#" )); do
+        local arg="$1"; shift
+        case $arg in
+            -f)
+                HOTFIX=true;;
+            *)
+                if [[ -z "$BRANCH_NAME" ]]; then
+                    BRANCH_NAME="$arg"
+                else
+                    usage
+                    exit 1
+                fi
+                ;;
+        esac
+    done
 }
