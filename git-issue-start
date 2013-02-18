@@ -1,34 +1,51 @@
 #!/bin/sh
 
-usage() {
-    echo "usage: git issue start <ISSUE_KEY> [-b <BRANCH_NAME>]"
-    echo
-    echo "<ISSUE_KEY> should be the Jira key for the issue you'd like to work on:"
-    echo
-    echo "   git issue start WEB-12 -b cleanup"
-    echo
-    echo "Optionally, you can name the branch inline:"
-    echo
-    echo "   git issue start WEB-12/cleanup"
+function usage() {
+    cat <<USAGE
+usage: git issue start [<issuekey>] [-b <branchname>] [-H]
+
+Arguments:
+    <issuekey>       The Jira key for the issue to work on.
+
+Options:
+    -b <branchname>  The descriptive name of the branch.
+    -H               Start a hotfix branch.
+
+Examples:
+    # Start working on WEB-12. The descriptive name
+    # will be generated from the Jira issue summary.
+    $ git issue start WEB-12
+
+    # Start working on a hotfix branch:
+    $ git issue start WEB-12 -H
+
+    # Specify the descriptive name of the branch:
+    $ git issue start WEB-12 -b cleanup
+
+    # Or this will do the same thing:
+    $ git issue start WEB-12/cleanup
+USAGE
 }
 
-cmd_start() {
+function cmd_start() {
     if [ "$#" -lt 1 ]; then
         usage; exit 1
     fi
-    login_jira
-
     local issue=(${1//\// }); shift
+    parse_opts "$@"
+
+    login_jira
     local issue_key=${issue[0]}
     local issue_name=${issue[1]}
     local issue_summary
     local issue_branch
+    local start_branch
+    local remote
     check_jira_key "$issue_key"
 
     puts_step "Starting issue: $issue_key"
     issue_summary=$(get_jira_summary "$issue_key")
     if [[ -z "$issue_name" ]]; then
-        parse_opts "$@"
         issue_name="$BRANCH_NAME"
     fi
     if [[ -z "$issue_name" ]]; then
@@ -36,32 +53,40 @@ cmd_start() {
     fi
     issue_branch="$issue_key/$issue_name"
 
-    puts_step "Creating branch: $issue_branch"
-    git checkout development
-    git pull origin development 2>/dev/null
-    git checkout -b "$issue_branch" development
+    if [[ -n "$HOTFIX" ]]; then
+        issue_branch="!$issue_branch"
+        start_branch="$JIRA_MASTER_BRANCH"
+        remote="$JIRA_MASTER_REMOTE"
+    else
+        start_branch="$JIRA_DEVELOPMENT_BRANCH"
+        remote="$JIRA_DEVELOPMENT_REMOTE"
+    fi
+
+    puts_step "Creating branch: $issue_branch from '$start_branch'"
+    git checkout "$start_branch"
+    git pull "$remote" "$start_branch" 2>/dev/null
+    git checkout -b "$issue_branch" "$start_branch"
 
     puts_step "Updating issue: $issue_key"
     jira_cmd -a progressIssue --issue "$issue_key" --step "In Progress"
     jira_cmd -a updateIssue --issue "$issue_key" --assignee "$JIRA_USER" >/dev/null
 }
 
-cmd_help() {
+function cmd_help() {
     usage
     exit 0
 }
 
-parse_opts() {
-    while getopts ":b:" OPTION
+function parse_opts() {
+    while getopts ":Hb:" option
     do
-        case "$OPTION" in
+        case "$option" in
+            H)
+                HOTFIX=true;;
             b)
-                BRANCH_NAME="$OPTARG"
-                ;;
+                BRANCH_NAME="$OPTARG";;
             \?)
-                usage
-                exit 1
-                ;;
+                usage; exit 1;;
         esac
     done
 }

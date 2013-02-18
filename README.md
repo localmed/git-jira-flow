@@ -51,7 +51,7 @@ Usage
 -----
 
 ``` bash
-$ git issue start <ISSUE_KEY> [-b <BRANCH_NAME>]
-$ git issue finish [ISSUE_KEY]
+$ git issue start [<issuekey>] [-b <branchname>] [-H]
+$ git issue finish [<issuekey>] [-H]
 $ git issue help
 ```

@@ -5,7 +5,7 @@ if [ "$DEBUG" = "yes" ]; then
 fi
 set -e
 
-export GITISSUE_VERSION="0.2.2"
+export GITISSUE_VERSION="0.3.0"
 export GITISSUE_CACHE_DIR=${GITISSUE_CACHE_DIR:-"$HOME/.gitissue"}
 export GITISSUE_CACHE_EXPIRATION=${GITISSUE_CACHE_EXPIRATION:-30}
 
@@ -14,11 +14,13 @@ export GITISSUE_CACHE_EXPIRATION=${GITISSUE_CACHE_EXPIRATION:-30}
 export GITISSUE_DIR=$(dirname "$(echo "$0" | sed -e 's,\\,/,g')")
 
 usage() {
-    echo "usage: git issue <subcommand>"
-    echo
-    echo "Available subcommands are:"
-    echo "   start    Create a new issue branch & set status to 'In Progress'"
-    echo "   finish   Merge issue branch & set status to 'Resolved'"
+    cat <<USAGE
+usage: git issue <subcommand>
+
+Available subcommands are:
+   start    Create a new issue branch & set status to 'In Progress'
+   finish   Merge issue branch & set status to 'Resolved'
+USAGE
 }
 
 main() {
