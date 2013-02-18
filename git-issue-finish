@@ -2,13 +2,13 @@
 
 function usage() {
     cat <<USAGE
-usage: git issue finish [<issuekey>] [-f]
+usage: git issue finish [<issuekey>] [-H]
 
 Arguments:
     <issuekey>  The Jira key for the issue to work on.
 
 Options:
-    -f          Finish a hotfix branch.
+    -H          Finish a hotfix branch.
 
 Examples:
     # Finish the current working branch:
@@ -18,9 +18,9 @@ Examples:
     $ git issue finish WEB-12
 
     # Finish a hotfix branch:
-    $ git issue finish -f
+    $ git issue finish -H
 
-    # -f is not required if the name of the current
+    # -H is not required if the name of the current
     # branch starts with an '!'
     $ git branch
       master
@@ -91,7 +91,7 @@ function parse_args() {
     while (( "$#" )); do
         local arg="$1"; shift
         case $arg in
-            -f)
+            -H)
                 HOTFIX=true;;
             *)
                 if [[ -z "$BRANCH_NAME" ]]; then

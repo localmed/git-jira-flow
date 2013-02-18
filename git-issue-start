@@ -2,14 +2,14 @@
 
 function usage() {
     cat <<USAGE
-usage: git issue start [<issuekey>] [-b <branchname>] [-f]
+usage: git issue start [<issuekey>] [-b <branchname>] [-H]
 
 Arguments:
     <issuekey>       The Jira key for the issue to work on.
 
 Options:
     -b <branchname>  The descriptive name of the branch.
-    -f               Start a hotfix branch.
+    -H               Start a hotfix branch.
 
 Examples:
     # Start working on WEB-12. The descriptive name
@@ -17,7 +17,7 @@ Examples:
     $ git issue start WEB-12
 
     # Start working on a hotfix branch:
-    $ git issue start WEB-12 -f
+    $ git issue start WEB-12 -H
 
     # Specify the descriptive name of the branch:
     $ git issue start WEB-12 -b cleanup
@@ -78,13 +78,13 @@ function cmd_help() {
 }
 
 function parse_opts() {
-    while getopts ":fb:" option
+    while getopts ":Hb:" option
     do
         case "$option" in
+            H)
+                HOTFIX=true;;
             b)
                 BRANCH_NAME="$OPTARG";;
-            f)
-                HOTFIX=true;;
             \?)
                 usage; exit 1;;
         esac
