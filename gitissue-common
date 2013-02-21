@@ -93,7 +93,7 @@ JIRA_CONFIG
 # Checks if the given string looks like a valid Jira issue key, failing fast
 # if it does not.
 function check_jira_key() {
-    [[ "$1" =~ ^[A-Z]+-[0-9]+$ ]] || fail "'$1' is not a vaild Jira issue key"
+	test -n `echo "$1" | grep ^[A-Z]+-[0-9]+$` || fail "'$1' is not a vaild Jira issue key"
 }
 
 # Echos the summary for the given Jira issue key. This will fail if the
