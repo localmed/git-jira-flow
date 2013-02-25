@@ -45,6 +45,12 @@ And optionally:
 ```
 [jira]
   cli = <path to Jira CLI>
+
+[jiraflow "development"]
+  branch = develop
+  
+[jiraflow "master"]
+  branch = master
 ```
 
 Usage
