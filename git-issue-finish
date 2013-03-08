@@ -68,6 +68,9 @@ function cmd_finish() {
     git branch -d "$branch"
     git push "$remote" "$start_branch" 2>/dev/null
 
+    puts_step "Updating issue: $issue_key"
+    jira_cmd -a progressIssue --issue "$issue_key" --step "Resolved"
+
     if [[ -n "$hotfix" ]]; then
         local rebase_branch="$JIRA_DEVELOPMENT_BRANCH"
         local rebase_origin="$JIRA_DEVELOPMENT_REMOTE"
@@ -77,9 +80,6 @@ function cmd_finish() {
         git rebase "$start_branch"
         git push "$rebase_origin" "$rebase_branch" 2>/dev/null
     fi
-
-    puts_step "Updating issue: $issue_key"
-    jira_cmd -a progressIssue --issue "$issue_key" --step "Resolved"
 }
 
 function cmd_help() {
