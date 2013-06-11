@@ -78,7 +78,7 @@ function cmd_finish() {
         git checkout "$rebase_branch"
         git pull "$rebase_origin" "$rebase_branch" 2>/dev/null
         git rebase "$start_branch"
-        git push "$rebase_origin" "$rebase_branch" 2>/dev/null
+        git push -f "$rebase_origin" "$rebase_branch" 2>/dev/null
     fi
 }
 
