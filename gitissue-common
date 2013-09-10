@@ -16,8 +16,8 @@ function fail() {
 # Breaks a multiline string into 80 char width segments, indented n characters.
 # String formatting in shell at its best.
 function format() {
-  local string=$1
-  local indent=$2
+  local string="$1"
+  local indent="$2"
   local text_width=`expr 80 - $indent`
   local indentation="$(head -c $indent 2>/dev/null < /dev/zero | tr '\0' ' ')"
   echo $string | fmt -sw $text_width | sed "s/^/$indentation/"
@@ -143,12 +143,12 @@ function compose_commit_message() {
   local description="$(get_jira_description $jira_key)"
   local subcommit_messages="$(get_subcommit_messages $issue_branch $merge_branch)"
   cat <<MSG
-$(format $header 0)
+$(format "$header" 0)
 
-$(format $description 2)
+$(format "$description" 2)
 
 Subcommit(s):
-$(format $subcommit_messages 2)
+$(format "$subcommit_messages" 2)
 MSG
 }
 
