@@ -13,6 +13,16 @@ function fail() {
     exit 1
 }
 
+# Breaks a multiline string into 80 char width segments, indented n characters.
+# String formatting in shell at its best.
+function format() {
+  local string=$1
+  local indent=$2
+  local text_width=`expr 80 - $indent`
+  local indentation="$(head -c $indent 2>/dev/null < /dev/zero | tr '\0' ' ')"
+  echo $string | fmt -sw $text_width | sed "s/^/$indentation/"
+}
+
 # Executes a command using Jira's CLI. This will automatically read your server
 # and authentication configuration from your .gitconfig:
 #
@@ -100,9 +110,46 @@ function check_jira_key() {
 # issue does not exist.
 function get_jira_summary() {
     local jira_key="$1"
-    local jira_summary=$(jira_cmd -a getFieldValue --field Summary --issue $jira_key 2>/dev/null | sed -e '1d')
+    local jira_summary="$(jira_cmd -a getFieldValue --field Summary --issue $jira_key 2>/dev/null | sed -e '1d')"
     test -n "$jira_summary" || fail "Issue '$jira_key' does not exist"
     echo "$jira_summary"
+}
+
+# Echos the description for the given Jira issue key. This will fail if the
+# issue does not exist.
+function get_jira_description() {
+    local jira_key="$1"
+    local jira_description="$(jira_cmd -a getFieldValue --field Description --issue $jira_key 2>/dev/null | sed -e '1d')"
+    test -n "$jira_description" || fail "Issue '$jira_key' does not exist"
+    echo "$jira_description"
+}
+
+# Echos the shorthand commit logs for all commits in issue_branch
+# not in merge_branch
+function get_subcommit_messages() {
+  local issue_branch=$1
+  local merge_branch=$2
+  echo "$(git log $issue_branch --not $merge_branch --oneline)"
+}
+
+# Cats a pretty printed multi-line commit message
+# Uses information from the jira issue and the git log
+function compose_commit_message() {
+  local jira_key="$1"
+  local issue_branch="$2"
+  local merge_branch="$3"
+  local summary="$(get_jira_summary $jira_key)"
+  local header="Resolved Issue $issue_key: $summary"
+  local description="$(get_jira_description $jira_key)"
+  local subcommit_messages="$(get_subcommit_messages $issue_branch $merge_branch)"
+  cat <<MSG
+$(format $header 0)
+
+$(format $description 2)
+
+Subcommit(s):
+$(format $subcommit_messages 2)
+MSG
 }
 
 function git_local_branches() {
