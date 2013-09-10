@@ -139,7 +139,7 @@ function compose_commit_message() {
   local issue_branch="$2"
   local merge_branch="$3"
   local summary="$(get_jira_summary $jira_key)"
-  local header="Resolved Issue $issue_key: $summary"
+  local header="Resolved Issue $jira_key: $summary"
   local description="$(get_jira_description $jira_key)"
   local subcommit_messages="$(get_subcommit_messages $issue_branch $merge_branch)"
   cat <<MSG
