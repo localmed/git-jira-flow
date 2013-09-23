@@ -18,7 +18,7 @@ function fail() {
 function format() {
   local string="$1"
   local indent="$2"
-  local text_width=`expr 80 - $indent`
+  local text_width=`expr 72 - $indent`
   local indentation="$(head -c $indent 2>/dev/null < /dev/zero | tr '\0' ' ')"
   echo $string | fmt -sw $text_width | sed "s/^/$indentation/"
 }
@@ -145,7 +145,7 @@ function compose_commit_message() {
   cat <<MSG
 $(format "$header" 0)
 
-$(format "$description" 2)
+$(format "$description" 0)
 
 Subcommit(s):
 $(format "$subcommit_messages" 2)
