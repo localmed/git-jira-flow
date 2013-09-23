@@ -51,7 +51,6 @@ function cmd_finish() {
 
     login_jira
     check_jira_key "$issue_key"
-    summary=$(get_jira_summary $issue_key)
 
     if [[ -n "$hotfix" ]]; then
         start_branch="$JIRA_MASTER_BRANCH"
@@ -61,10 +60,12 @@ function cmd_finish() {
         remote="$JIRA_DEVELOPMENT_REMOTE"
     fi
 
+    local commit_message=$(compose_commit_message $issue_key $branch $start_branch)
+
     puts_step "Finishing branch: $branch"
     git checkout "$start_branch"
     git pull "$remote" "$start_branch" 2>/dev/null
-    git merge --no-ff "$branch" -m "Close $issue_key #resolved #fixed"
+    git merge --no-ff "$branch" -m "$commit_message"
     git branch -d "$branch"
     git push "$remote" "$start_branch" 2>/dev/null
 
