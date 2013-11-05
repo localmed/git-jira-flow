@@ -20,7 +20,8 @@ function format() {
   local indent="$2"
   local text_width=`expr 72 - $indent`
   local indentation="$(head -c $indent 2>/dev/null < /dev/zero | tr '\0' ' ')"
-  echo $string | fmt -sw $text_width | sed "s/^/$indentation/"
+  # take string \  insert exclamations at line ends \ make newlines \ indent them
+  echo "$string" | sed -E "s/(.{$text_width})/\1!/g" | tr "!" "\n" | sed "s/^/$indentation/g"
 }
 
 # Executes a command using Jira's CLI. This will automatically read your server

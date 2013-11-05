@@ -5,7 +5,7 @@ if [ "$DEBUG" = "yes" ]; then
 fi
 set -e
 
-export GITISSUE_VERSION="0.3.5"
+export GITISSUE_VERSION="0.3.6"
 export GITISSUE_CACHE_DIR=${GITISSUE_CACHE_DIR:-"$HOME/.gitissue"}
 export GITISSUE_CACHE_EXPIRATION=${GITISSUE_CACHE_EXPIRATION:-30}
 
