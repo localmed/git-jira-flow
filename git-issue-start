@@ -68,7 +68,7 @@ function cmd_start() {
     git checkout -b "$issue_branch" "$start_branch"
 
     puts_step "Updating issue: $issue_key"
-    jira_cmd -a progressIssue --issue "$issue_key" --step "In Progress"
+    jira_cmd -a progressIssue --issue "$issue_key" --step "Start Progress"
     jira_cmd -a updateIssue --issue "$issue_key" --assignee "$JIRA_USER" >/dev/null
 }
 
